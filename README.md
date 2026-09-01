@@ -1,4 +1,4 @@
-# Pocket Receiver v0.1.2
+# Pocket Receiver v0.1.3
 
 Compact RTL-SDR audio receiver for the Waveshare PocketTerm35.
 
@@ -7,7 +7,7 @@ Compact RTL-SDR audio receiver for the Waveshare PocketTerm35.
 - AM / NFM / WFM / USB / LSB
 - RTL gain: Auto / 10 / 20 / 30 / 40 dB
 - Volume: 25 / 50 / 75 / 100%
-- Space: start/stop listening
+- L: start/stop listening
 - Q: exit
 - Hardened readsb SDR lease matching Pocket Spectrum v0.3.5
 - CLI launch support for future Spectrum integration
@@ -44,3 +44,7 @@ Or pre-tune:
 ```bash
 pocket-receiver --frequency 100.0 --mode WFM
 ```
+
+## v0.1.3
+
+- Changed Listen/Stop from Space to `L` so the frequency input can retain normal text-entry behaviour.
