@@ -30,8 +30,8 @@ class PocketReceiver(App):
     '''
 
     BINDINGS = [
-        Binding("l", "toggle", "Listen/Stop", priority=True),
-        Binding("q", "quit_receiver", "Back", priority=True),
+        Binding("pause", "toggle", "Start: Listen/Stop", priority=True),
+        Binding("sysrq", "quit_receiver", "Select: Back", priority=True),
     ]
 
     def __init__(self, frequency: float = 100.0, mode: str = "WFM") -> None:
@@ -85,7 +85,7 @@ class PocketReceiver(App):
             self.lease.acquire()
             self.lease_acquired = True
             self.query_one("#status", Static).update(
-                "Ready | readsb paused | L = listen"
+                "Ready | readsb paused | Start = listen"
             )
         except SdrLeaseError as exc:
             self.query_one("#status", Static).update(f"SDR unavailable: {exc}")
@@ -105,7 +105,7 @@ class PocketReceiver(App):
             return
         if self.receiver.running:
             self.receiver.stop()
-            status.update("Stopped | L = listen")
+            status.update("Stopped | Start = listen")
             return
         try:
             settings = self._settings()
@@ -118,7 +118,7 @@ class PocketReceiver(App):
             self.receiver.start(settings)
             status.update(
                 f"Listening {settings.frequency_mhz:.3f} MHz "
-                f"{settings.mode} | L = stop"
+                f"{settings.mode} | Start = stop"
             )
         except (OSError, KeyError) as exc:
             self.receiver.stop()
