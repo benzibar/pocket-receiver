@@ -1,4 +1,4 @@
-# Pocket Receiver v0.1.9
+# Pocket Receiver v0.2.0
 
 Compact RTL-SDR audio receiver for the Waveshare PocketTerm35.
 
@@ -99,3 +99,10 @@ PocketTerm navigation:
 - Up/Down moves between fields.
 - Left/Right cycles the focused Mode, Gain or Volume value immediately.
 - Frequency remains a normal editable text field.
+
+## v0.2.0
+
+Live controls:
+- While listening, changes to Mode, Gain and Volume are applied immediately.
+- Frequency edits are also applied as soon as the entered value is a valid positive number.
+- The receiver process is transparently restarted with the new settings; the user no longer needs to press Start twice after changing a field.
