@@ -1,4 +1,4 @@
-# Pocket Receiver v0.2.0
+# Pocket Receiver v0.2.1
 
 Compact RTL-SDR audio receiver for the Waveshare PocketTerm35.
 
@@ -106,3 +106,9 @@ Live controls:
 - While listening, changes to Mode, Gain and Volume are applied immediately.
 - Frequency edits are also applied as soon as the entered value is a valid positive number.
 - The receiver process is transparently restarted with the new settings; the user no longer needs to press Start twice after changing a field.
+
+## v0.2.1
+
+- Fixed live Mode / Gain / Volume changes: ChoiceField now explicitly asks the app to reapply settings.
+- Frequency changes are also reapplied while listening once the typed value is valid.
+- Status line now shows active mode, gain and volume so the applied settings are visible.

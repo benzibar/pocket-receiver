@@ -50,6 +50,10 @@ class ChoiceField(Static, can_focus=True):
             (index + direction) % len(values)
         ]
         self._render_value()
+
+        app = self.app
+        if hasattr(app, "apply_live_settings"):
+            app.apply_live_settings()
 from pocket_receiver.hardware_buttons import (
     KEY_PAUSE,
     KEY_SYSRQ,
@@ -253,6 +257,44 @@ class PocketReceiver(App):
             return
 
 
+    def on_input_changed(self, event: Input.Changed) -> None:
+        if event.input.id != "frequency":
+            return
+
+        if self.receiver.running:
+            self.apply_live_settings()
+
+    def apply_live_settings(self) -> None:
+        """Immediately apply changed settings while the receiver is running."""
+        if not self.receiver.running:
+            return
+
+        status = self.query_one("#status", Static)
+
+        try:
+            settings = self._settings()
+
+            if settings.frequency_mhz <= 0:
+                return
+
+        except (ValueError, TypeError):
+            # Allow the user to be halfway through typing a frequency
+            # without interrupting the current receiver.
+            return
+
+        try:
+            self.receiver.start(settings)
+            status.update(
+                f"Listening {settings.frequency_mhz:.3f} MHz "
+                f"{settings.mode} | "
+                f"Gain {settings.gain} | "
+                f"Vol {settings.volume}% | "
+                f"Start = stop"
+            )
+        except (OSError, KeyError) as exc:
+            self.receiver.stop()
+            status.update(f"Receiver error: {exc}")
+
     def action_toggle(self) -> None:
         status = self.query_one("#status", Static)
         if not self.lease_acquired:
@@ -273,7 +315,10 @@ class PocketReceiver(App):
             self.receiver.start(settings)
             status.update(
                 f"Listening {settings.frequency_mhz:.3f} MHz "
-                f"{settings.mode} | Start = stop"
+                f"{settings.mode} | "
+                f"Gain {settings.gain} | "
+                f"Vol {settings.volume}% | "
+                f"Start = stop"
             )
         except (OSError, KeyError) as exc:
             self.receiver.stop()
