@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.containers import Container, Horizontal
 from textual.widgets import Footer, Header, Input, Label, Select, Static
 
@@ -29,8 +30,8 @@ class PocketReceiver(App):
     '''
 
     BINDINGS = [
-        ("l", "toggle", "Listen/Stop"),
-        ("q", "quit_receiver", "Back"),
+        Binding("l", "toggle", "Listen/Stop", priority=True),
+        Binding("q", "quit_receiver", "Back", priority=True),
     ]
 
     def __init__(self, frequency: float = 100.0, mode: str = "WFM") -> None:

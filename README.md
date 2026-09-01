@@ -1,4 +1,4 @@
-# Pocket Receiver v0.1.3
+# Pocket Receiver v0.1.4
 
 Compact RTL-SDR audio receiver for the Waveshare PocketTerm35.
 
@@ -48,3 +48,7 @@ pocket-receiver --frequency 100.0 --mode WFM
 ## v0.1.3
 
 - Changed Listen/Stop from Space to `L` so the frequency input can retain normal text-entry behaviour.
+
+## v0.1.4
+
+- Made `L` and `Q` priority Textual bindings so they work even while the frequency Input or a Select widget has focus.
