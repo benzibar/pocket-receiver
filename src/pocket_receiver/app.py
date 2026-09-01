@@ -5,10 +5,51 @@ import argparse
 from textual.app import App, ComposeResult
 from textual.events import Key
 from textual.containers import Container, Horizontal
-from textual.widgets import Footer, Header, Input, Label, Select, Static
+from textual.widgets import Footer, Header, Input, Label, Static
 
 from pocket_receiver.receiver import AudioReceiver, ReceiverSettings
 from pocket_receiver.sdr_lease import ReadsbLease, SdrLeaseError
+
+
+class ChoiceField(Static, can_focus=True):
+    def __init__(
+        self,
+        options: tuple[tuple[str, str], ...],
+        value: str,
+        *,
+        id: str,
+    ) -> None:
+        self.options = options
+        self._value = value
+        super().__init__("", id=id)
+
+    @property
+    def value(self) -> str:
+        return self._value
+
+    def on_mount(self) -> None:
+        self._render_value()
+
+    def _render_value(self) -> None:
+        for label, value in self.options:
+            if value == self._value:
+                self.update(label)
+                return
+
+        self.update(self._value)
+
+    def cycle(self, direction: int) -> None:
+        values = [value for _, value in self.options]
+
+        try:
+            index = values.index(self._value)
+        except ValueError:
+            index = 0
+
+        self._value = values[
+            (index + direction) % len(values)
+        ]
+        self._render_value()
 from pocket_receiver.hardware_buttons import (
     KEY_PAUSE,
     KEY_SYSRQ,
@@ -27,14 +68,16 @@ class PocketReceiver(App):
     #main { padding: 0 1; }
     .row { height: 3; }
     .label { width: 12; content-align: left middle; }
-    Input, Select { height: 3; }
+    Input, ChoiceField { height: 3; }
     #frequency { width: 20; }
     #mode { width: 16; }
     #gain { width: 16; }
     #volume { width: 16; }
     #status { height: 3; padding: 1 0; }
-    Input:focus, Select:focus {
+    Input:focus, ChoiceField:focus {
         border: tall $accent;
+        color: cyan;
+        text-style: bold;
     }
     '''
 
@@ -62,28 +105,45 @@ class PocketReceiver(App):
                 )
             with Horizontal(classes="row"):
                 yield Label("Mode", classes="label")
-                yield Select(
-                    [(x, x) for x in ("AM", "NFM", "WFM", "USB", "LSB")],
-                    value=self.initial_mode if self.initial_mode in
-                    ("AM", "NFM", "WFM", "USB", "LSB") else "WFM",
+                yield ChoiceField(
+                    (
+                        ("AM", "AM"),
+                        ("NFM", "NFM"),
+                        ("WFM", "WFM"),
+                        ("USB", "USB"),
+                        ("LSB", "LSB"),
+                    ),
+                    value=(
+                        self.initial_mode
+                        if self.initial_mode in ("AM", "NFM", "WFM", "USB", "LSB")
+                        else "WFM"
+                    ),
                     id="mode",
-                    allow_blank=False,
                 )
             with Horizontal(classes="row"):
                 yield Label("Gain", classes="label")
-                yield Select(
-                    [(x, x) for x in ("Auto", "10", "20", "30", "40")],
+                yield ChoiceField(
+                    (
+                        ("Auto", "Auto"),
+                        ("10 dB", "10"),
+                        ("20 dB", "20"),
+                        ("30 dB", "30"),
+                        ("40 dB", "40"),
+                    ),
                     value="Auto",
                     id="gain",
-                    allow_blank=False,
                 )
             with Horizontal(classes="row"):
                 yield Label("Volume", classes="label")
-                yield Select(
-                    [(f"{x}%", x) for x in (25, 50, 75, 100)],
-                    value=50,
+                yield ChoiceField(
+                    (
+                        ("25%", "25"),
+                        ("50%", "50"),
+                        ("75%", "75"),
+                        ("100%", "100"),
+                    ),
+                    value="50",
                     id="volume",
-                    allow_blank=False,
                 )
             yield Static("Preparing SDR...", id="status")
         yield Footer()
@@ -126,9 +186,9 @@ class PocketReceiver(App):
     def _settings(self) -> ReceiverSettings:
         freq_text = self.query_one("#frequency", Input).value.strip()
         frequency = float(freq_text)
-        mode = str(self.query_one("#mode", Select).value)
-        gain = str(self.query_one("#gain", Select).value)
-        volume = int(self.query_one("#volume", Select).value)
+        mode = self.query_one("#mode", ChoiceField).value
+        gain = self.query_one("#gain", ChoiceField).value
+        volume = int(self.query_one("#volume", ChoiceField).value)
         return ReceiverSettings(frequency, mode, gain, volume)
 
     def _focused_field_index(self) -> int | None:
@@ -158,8 +218,14 @@ class PocketReceiver(App):
             f"#{self.FIELD_IDS[index]}"
         ).focus()
 
+    def _cycle_choice(self, direction: int) -> None:
+        focused = self.focused
+
+        if isinstance(focused, ChoiceField):
+            focused.cycle(direction)
+
     def on_key(self, event: Key) -> None:
-        """PocketTerm field navigation without blocking frequency typing."""
+        """PocketTerm navigation while keeping Frequency directly editable."""
         if event.key == "up":
             event.prevent_default()
             event.stop()
@@ -171,6 +237,21 @@ class PocketReceiver(App):
             event.stop()
             self._move_field_focus(1)
             return
+
+        if event.key == "left":
+            if isinstance(self.focused, ChoiceField):
+                event.prevent_default()
+                event.stop()
+                self._cycle_choice(-1)
+            return
+
+        if event.key == "right":
+            if isinstance(self.focused, ChoiceField):
+                event.prevent_default()
+                event.stop()
+                self._cycle_choice(1)
+            return
+
 
     def action_toggle(self) -> None:
         status = self.query_one("#status", Static)

@@ -1,4 +1,4 @@
-# Pocket Receiver v0.1.7
+# Pocket Receiver v0.1.9
 
 Compact RTL-SDR audio receiver for the Waveshare PocketTerm35.
 
@@ -82,3 +82,20 @@ PocketTerm navigation:
 - Start remains Listen / Stop via direct evdev.
 - Select remains Quit / Back via direct evdev.
 - Focused fields use an explicit Textual focus border for clearer selection.
+
+## v0.1.8
+
+- Left / Right now explicitly cycle Mode, Gain and Volume.
+- Frequency remains directly editable with normal keyboard input.
+- Gain labels are now shown as Auto / 10 dB / 20 dB / 30 dB / 40 dB.
+- Volume values are now stored consistently as strings and displayed as percentages.
+- Mode values are explicit and stable.
+
+
+## v0.1.9
+
+- Replaced Textual Select/dropdown widgets with simple PocketTerm-native choice fields.
+- Mode, Gain and Volume now show one plain value rather than a dropdown/slider control.
+- Up/Down moves between fields.
+- Left/Right cycles the focused Mode, Gain or Volume value immediately.
+- Frequency remains a normal editable text field.
