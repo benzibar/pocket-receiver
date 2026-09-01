@@ -1,4 +1,4 @@
-# Pocket Receiver v0.2.1
+# Pocket Receiver v0.2.2
 
 Compact RTL-SDR audio receiver for the Waveshare PocketTerm35.
 
@@ -112,3 +112,10 @@ Live controls:
 - Fixed live Mode / Gain / Volume changes: ChoiceField now explicitly asks the app to reapply settings.
 - Frequency changes are also reapplied while listening once the typed value is valid.
 - Status line now shows active mode, gain and volume so the applied settings are visible.
+
+## v0.2.2
+
+- Fixed live frequency retuning by debouncing frequency edits.
+- The receiver waits 450 ms after the last frequency keystroke before restarting `rtl_fm`.
+- This prevents repeated SDR restarts while a multi-digit frequency is still being typed.
+- Pending retunes are cancelled when listening stops or the app exits.

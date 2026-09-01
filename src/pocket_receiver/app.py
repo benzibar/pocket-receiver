@@ -96,6 +96,7 @@ class PocketReceiver(App):
         self.lease_acquired = False
         self.buttons = PocketTermButtons()
         self.button_timer = None
+        self.frequency_timer = None
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -261,8 +262,20 @@ class PocketReceiver(App):
         if event.input.id != "frequency":
             return
 
-        if self.receiver.running:
-            self.apply_live_settings()
+        if not self.receiver.running:
+            return
+
+        if self.frequency_timer is not None:
+            self.frequency_timer.stop()
+
+        self.frequency_timer = self.set_timer(
+            0.45,
+            self._apply_frequency_edit,
+        )
+
+    def _apply_frequency_edit(self) -> None:
+        self.frequency_timer = None
+        self.apply_live_settings()
 
     def apply_live_settings(self) -> None:
         """Immediately apply changed settings while the receiver is running."""
@@ -297,6 +310,11 @@ class PocketReceiver(App):
 
     def action_toggle(self) -> None:
         status = self.query_one("#status", Static)
+
+        if self.frequency_timer is not None:
+            self.frequency_timer.stop()
+            self.frequency_timer = None
+
         if not self.lease_acquired:
             status.update("SDR unavailable: readsb lease not acquired")
             return
@@ -328,6 +346,10 @@ class PocketReceiver(App):
         self.exit()
 
     def on_unmount(self) -> None:
+        if self.frequency_timer is not None:
+            self.frequency_timer.stop()
+            self.frequency_timer = None
+
         self.receiver.stop()
         self.buttons.close()
 
