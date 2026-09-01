@@ -1,4 +1,4 @@
-# Pocket Receiver v0.1.5
+# Pocket Receiver v0.1.7
 
 Compact RTL-SDR audio receiver for the Waveshare PocketTerm35.
 
@@ -60,3 +60,25 @@ PocketTerm hardware controls:
 - Select (`KEY_SYSRQ`) = Quit / Back
 
 The previous L/Q receiver hotkeys have been removed so normal keyboard input remains available to focused fields.
+
+
+## v0.1.6
+
+The PocketTerm Start and Select buttons are now read directly from Linux evdev
+rather than relying on terminal/Textual key translation.
+
+- Start: Linux `KEY_PAUSE` (119) -> Listen / Stop
+- Select: Linux `KEY_SYSRQ` (99) -> Quit / Back
+- The keyboard event device is discovered dynamically by its device name:
+  `My Company My Custom Pico Keyboard`
+- No hard-coded `/dev/input/eventN` number is used.
+
+## v0.1.7
+
+PocketTerm navigation:
+- Up / Down moves focus between Frequency, Mode, Gain and Volume.
+- Frequency remains a normal editable text field, so frequencies can be typed directly.
+- Left / Right retains the Select widget's normal behaviour for Mode, Gain and Volume.
+- Start remains Listen / Stop via direct evdev.
+- Select remains Quit / Back via direct evdev.
+- Focused fields use an explicit Textual focus border for clearer selection.
