@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import array
+import math
 import os
 import shutil
 import signal
@@ -14,6 +15,16 @@ from collections.abc import Callable
 
 from .model import ReceiverSettings, bandwidth_hz
 from .lease import ReadsbLease
+
+
+def pcm_level_dbfs(samples: array.array[int]) -> float:
+    """Return RMS level for signed 16-bit PCM, clamped to a useful floor."""
+    if not samples:
+        return -96.0
+    mean_square = sum(sample * sample for sample in samples) / len(samples)
+    if mean_square <= 0:
+        return -96.0
+    return max(-96.0, min(0.0, 20.0 * math.log10(math.sqrt(mean_square) / 32768.0)))
 
 
 class ReceiverPipeline:
@@ -38,6 +49,7 @@ class ReceiverPipeline:
         self._stopping = threading.Event()
         self._lock = threading.RLock()
         self._errors: deque[str] = deque(maxlen=8)
+        self._audio_level_dbfs = -96.0
 
     @property
     def playing(self) -> bool:
@@ -52,6 +64,20 @@ class ReceiverPipeline:
     @property
     def last_error(self) -> str:
         return self._errors[-1] if self._errors else ""
+
+    @property
+    def audio_level_dbfs(self) -> float | None:
+        """Smoothed pre-volume audio RMS, or None while not receiving."""
+        return self._audio_level_dbfs if self.playing else None
+
+    @property
+    def sdr_status(self) -> str:
+        label = f"RTL-SDR #{self.device}"
+        if self.playing:
+            return f"{label} · receiving"
+        if self.lease and self.lease.reserved:
+            return f"{label} · reserved"
+        return f"{label} · standby"
 
     def _rtl_command(self) -> list[str]:
         s = self.settings
@@ -90,6 +116,7 @@ class ReceiverPipeline:
                 self.lease.acquire()
             self._stopping.clear()
             self._errors.clear()
+            self._audio_level_dbfs = -96.0
             try:
                 self._rtl = subprocess.Popen(
                     self._rtl_command(), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -133,6 +160,12 @@ class ReceiverPipeline:
                 samples.frombytes(chunk)
                 if sys.byteorder != "little":
                     samples.byteswap()
+                measured = pcm_level_dbfs(samples)
+                # A short exponential average steadies the display without
+                # disguising speech or signal activity.
+                self._audio_level_dbfs = (
+                    measured * 0.25 + self._audio_level_dbfs * 0.75
+                )
                 scale = self.settings.volume / 100.0
                 if scale != 1.0:
                     for index, value in enumerate(samples):
@@ -228,6 +261,7 @@ class ReceiverPipeline:
                     thread.join(timeout=0.25)
             self._rtl = None
             self._aplay = None
+            self._audio_level_dbfs = -96.0
             if was_running:
                 self.report("Paused")
 

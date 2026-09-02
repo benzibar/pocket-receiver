@@ -11,8 +11,9 @@ The layout follows the supplied mock-up: Frequency, Mode, Bandwidth and Gain are
 on the left; antenna length, UK allocation, signal-metric availability and volume
 are on the right; the essential keys are always shown at the bottom.
 
-Version 1.0.1 improves the footer contrast and automatically opens selection
-menus upward when there is not enough screen space beneath a field.
+Version 1.1.0 improves footer contrast, automatically opens selection menus upward
+when necessary, and replaces unavailable RF metrics with live audio level and SDR
+state indicators.
 
 ## What it does
 
@@ -129,17 +130,20 @@ While editing Frequency:
 While editing Mode, Bandwidth or Gain, Up/Down changes the highlighted menu item,
 Enter commits it, and Esc cancels it. `p`, `m` and `n` remain global controls.
 
-## RSSI and SNR: why the UI says N/A
+## Signal information
 
-`rtl_fm` demodulates audio but does not publish calibrated RSSI or SNR telemetry.
-The RTL2832U also cannot be opened simultaneously by `rtl_fm` and a second
-measurement program such as `rtl_power`. Values inferred from audio would be
-misleading, and tuner gain makes raw power values uncalibrated anyway.
+The information panel shows a live RMS audio level in dBFS. It is measured from
+the demodulated signed-16-bit PCM before the user's volume adjustment, so changing
+volume does not falsify the meter. This is an audio activity indication, not RF
+signal strength.
 
-For those reasons this backend deliberately displays `N/A (rtl_fm)`. A future
+The SDR status reads `receiving` while the pipeline owns the dongle, `reserved`
+when this app has paused playback but continues holding the readsb reservation,
+and `standby` before a lease is needed. `rtl_fm` does not publish calibrated RSSI
+or SNR telemetry, and the RTL2832U cannot be shared with `rtl_power`. A future
 single-process IQ/DSP backend could calculate relative channel power and SNR from
-the same samples used for audio, but should label RSSI as uncalibrated unless the
-specific receiver has been calibrated against a known source.
+the audio IQ samples, but should label power as dBFS/relative unless the particular
+receiver has been calibrated against a known RF source.
 
 ## Audio and mode notes
 

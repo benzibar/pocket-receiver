@@ -1,10 +1,21 @@
+import array
 import unittest
 
 from pocket_receiver.model import ReceiverSettings
-from pocket_receiver.receiver import ReceiverPipeline
+from pocket_receiver.receiver import ReceiverPipeline, pcm_level_dbfs
 
 
 class ReceiverCommandTests(unittest.TestCase):
+    def test_pcm_level_is_measured_in_dbfs(self):
+        self.assertEqual(pcm_level_dbfs(array.array("h", [0, 0, 0])), -96.0)
+        self.assertAlmostEqual(
+            pcm_level_dbfs(array.array("h", [16384, -16384])), -6.0206, places=3
+        )
+
+    def test_idle_sdr_status_is_truthful(self):
+        pipeline = ReceiverPipeline(ReceiverSettings(), device=2)
+        self.assertEqual(pipeline.sdr_status, "RTL-SDR #2 · standby")
+
     def test_wfm_command_contains_all_selected_parameters(self):
         pipeline = ReceiverPipeline(ReceiverSettings(
             frequency_mhz=104.0,
@@ -28,4 +39,3 @@ class ReceiverCommandTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

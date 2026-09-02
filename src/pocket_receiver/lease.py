@@ -14,6 +14,11 @@ class ReadsbLease:
         self.report = report or (lambda _message: None)
         self._stopped_by_us = False
 
+    @property
+    def reserved(self) -> bool:
+        """Whether this app has stopped readsb and retained that reservation."""
+        return self._stopped_by_us
+
     @staticmethod
     def _run(*args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(args, text=True, capture_output=True, timeout=10, check=False)

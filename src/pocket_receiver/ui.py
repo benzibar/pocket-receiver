@@ -107,6 +107,14 @@ class PocketReceiverUI:
             return self.settings.bandwidth
         return self.settings.gain
 
+    def _audio_level_text(self) -> str:
+        level = self.pipeline.audio_level_dbfs
+        if level is None:
+            return "────────  paused"
+        segments = max(0, min(8, round((level + 60.0) / 60.0 * 8)))
+        bar = "█" * segments + "·" * (8 - segments)
+        return f"{bar}  {level:.0f} dBFS"
+
     def _draw_frequency_value(self, y: int, x: int, attr: int) -> None:
         display = format_frequency(self.frequency_digits)
         if not (self.editing and self.focus == 0):
@@ -155,8 +163,8 @@ class PocketReceiverUI:
         info = (
             ("Quarter wave", format_antenna_length(self.settings.frequency_mhz)),
             ("UK band", identify_band(self.settings.frequency_mhz)),
-            ("RSSI", "N/A (rtl_fm)"),
-            ("SNR", "N/A (rtl_fm)"),
+            ("Audio level", self._audio_level_text()),
+            ("SDR status", self.pipeline.sdr_status),
             ("Volume", f"{self.settings.volume}%"),
         )
         for offset, (label, value) in enumerate(info):
