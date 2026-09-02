@@ -1,16 +1,24 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pocket-receiver"
-version = "0.2.2"
-description = "Compact RTL-SDR audio receiver for the PocketTerm35"
-requires-python = ">=3.11"
-dependencies = ["textual>=0.70"]
+version = "1.0.0"
+description = "Keyboard-first RTL-SDR receiver for PocketTerm and Raspberry Pi"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "Pocket Receiver contributors"}]
+dependencies = []
 
 [project.scripts]
-pocket-receiver = "pocket_receiver.app:main"
+pocket-receiver = "pocket_receiver.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+

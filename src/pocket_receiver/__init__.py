@@ -1,1 +1,4 @@
-__version__ = "0.2.2"
+"""Pocket Receiver."""
+
+__version__ = "1.0.0"
+

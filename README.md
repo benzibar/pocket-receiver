@@ -1,121 +1,190 @@
-# Pocket Receiver v0.2.2
+# Pocket Receiver
 
-Compact RTL-SDR audio receiver for the Waveshare PocketTerm35.
+Pocket Receiver is a standalone, keyboard-first RTL-SDR radio for a Raspberry Pi
+with a PocketTerm35 (640×480), or any Linux terminal of at least 64×22 characters.
+It uses only the Python standard library for the interface.
 
-## Features
-- Frequency entry in MHz
-- AM / NFM / WFM / USB / LSB
-- RTL gain: Auto / 10 / 20 / 30 / 40 dB
-- Volume: 25 / 50 / 75 / 100%
-- PocketTerm Start button: start/stop listening
-- Q: exit
-- Hardened readsb SDR lease matching Pocket Spectrum v0.3.5
-- CLI launch support for future Spectrum integration
+Observe UK law and licence conditions. Band labels are a compact operating aid,
+not permission to receive or disclose traffic.
 
-## Pi prerequisites
+The layout follows the supplied mock-up: Frequency, Mode, Bandwidth and Gain are
+on the left; antenna length, UK allocation, signal-metric availability and volume
+are on the right; the essential keys are always shown at the bottom.
+
+## What it does
+
+- Displays frequency as exactly seven digits: `0,104.000 MHz`.
+- Opens focused fields with Enter and commits them with Enter.
+- Edits frequency one digit at a time; numbers replace and advance, arrows select
+  or increment a digit, and only digits are accepted.
+- Retunes 500 ms after the last frequency edit while playing, or immediately on
+  Enter.
+- Provides mode-aware menus for AM, NFM, WFM, USB and LSB bandwidths.
+- Supports tuner gain Auto/20/40/60/80 dB.
+- Changes PCM volume from 0–100% without retuning.
+- Cooperatively stops `readsb` on first play and restores it at final exit, but
+  only when Pocket Receiver was the process that stopped it.
+- Captures useful RTL-SDR/ALSA errors and monitors and reaps both child processes.
+
+## Install on Raspberry Pi
+
+On the Pi, clone the GitHub repository and run:
 
 ```bash
-sudo apt install rtl-sdr alsa-utils
+cd pocket-receiver
+bash scripts/install.sh
 ```
 
-The existing sudoers rule is required:
+The script installs `rtl-sdr`, ALSA tools and Python venv support, then creates a
+local `.venv` and installs the `pocket-receiver` command.
+
+If an RTL2832 DVB kernel driver claims the dongle, follow the Raspberry Pi OS
+`rtl-sdr` package guidance for blacklisting `dvb_usb_rtl28xxu`, then reboot. Check
+the device independently with:
+
+```bash
+rtl_test -t
+```
+
+Pocket Receiver expects the existing passwordless rules to permit exactly:
 
 ```text
-bdm198 ALL=(root) NOPASSWD: /usr/bin/systemctl stop readsb, /usr/bin/systemctl start readsb
+systemctl stop readsb
+systemctl start readsb
 ```
 
-## Install
-
-```bash
-cd ~/pocketterm/apps/pocket-receiver
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
+It uses `sudo -n`, so a missing rule becomes a visible error instead of opening a
+password prompt underneath the full-screen UI.
 
 ## Run
 
 ```bash
+source .venv/bin/activate
 pocket-receiver
 ```
 
-Or pre-tune:
+Start immediately on FM broadcast:
 
 ```bash
-pocket-receiver --frequency 100.0 --mode WFM
+pocket-receiver --frequency 104.0 --mode WFM --bandwidth 200 --gain Auto --volume 30 --play
 ```
 
-## v0.1.3
+An airband example:
 
-- Changed Listen/Stop from Space to `L` so the frequency input can retain normal text-entry behaviour.
+```bash
+pocket-receiver -f 121.500 -m AM -b 12 -g 40 -v 50 --play
+```
 
-## v0.1.4
+This is also the launch interface for Spectrum or another app. Execute the
+command as an argument array (not a shell string), for example:
 
-- Made `L` and `Q` priority Textual bindings so they work even while the frequency Input or a Select widget has focus.
+```python
+subprocess.Popen([
+    "/home/bdm198/pocket-receiver/.venv/bin/pocket-receiver",
+    "--frequency", "145.500",
+    "--mode", "NFM",
+    "--bandwidth", "12.5",
+    "--gain", "Auto",
+    "--volume", "40",
+    "--play",
+])
+```
 
-## v0.1.5
+Additional options:
 
-PocketTerm hardware controls:
-- Start (`KEY_PAUSE`) = Listen / Stop
-- Select (`KEY_SYSRQ`) = Quit / Back
+```text
+--device 0              RTL-SDR device index
+--audio-device default  ALSA PCM device
+--no-readsb             Never manage the readsb service
+--version               Print the installed version
+```
 
-The previous L/Q receiver hotkeys have been removed so normal keyboard input remains available to focused fields.
+Use `pocket-receiver --help` for the authoritative option list.
 
+## Keys
 
-## v0.1.6
+When browsing fields:
 
-The PocketTerm Start and Select buttons are now read directly from Linux evdev
-rather than relying on terminal/Textual key translation.
+| Key | Action |
+|---|---|
+| Up / Down | Move focus |
+| Enter | Edit the focused field |
+| `p` | Play/pause |
+| `m` / `n` | Volume up/down by 10% |
+| `q` | Quit (only when not editing) |
 
-- Start: Linux `KEY_PAUSE` (119) -> Listen / Stop
-- Select: Linux `KEY_SYSRQ` (99) -> Quit / Back
-- The keyboard event device is discovered dynamically by its device name:
-  `My Company My Custom Pico Keyboard`
-- No hard-coded `/dev/input/eventN` number is used.
+While editing Frequency:
 
-## v0.1.7
+| Key | Action |
+|---|---|
+| `0`–`9` | Replace selected digit and advance |
+| Left / Right | Select a digit |
+| Up / Down | Increment/decrement selected digit |
+| Enter | Commit and retune immediately |
+| Esc | Cancel |
 
-PocketTerm navigation:
-- Up / Down moves focus between Frequency, Mode, Gain and Volume.
-- Frequency remains a normal editable text field, so frequencies can be typed directly.
-- Left / Right retains the Select widget's normal behaviour for Mode, Gain and Volume.
-- Start remains Listen / Stop via direct evdev.
-- Select remains Quit / Back via direct evdev.
-- Focused fields use an explicit Textual focus border for clearer selection.
+While editing Mode, Bandwidth or Gain, Up/Down changes the highlighted menu item,
+Enter commits it, and Esc cancels it. `p`, `m` and `n` remain global controls.
 
-## v0.1.8
+## RSSI and SNR: why the UI says N/A
 
-- Left / Right now explicitly cycle Mode, Gain and Volume.
-- Frequency remains directly editable with normal keyboard input.
-- Gain labels are now shown as Auto / 10 dB / 20 dB / 30 dB / 40 dB.
-- Volume values are now stored consistently as strings and displayed as percentages.
-- Mode values are explicit and stable.
+`rtl_fm` demodulates audio but does not publish calibrated RSSI or SNR telemetry.
+The RTL2832U also cannot be opened simultaneously by `rtl_fm` and a second
+measurement program such as `rtl_power`. Values inferred from audio would be
+misleading, and tuner gain makes raw power values uncalibrated anyway.
 
+For those reasons this backend deliberately displays `N/A (rtl_fm)`. A future
+single-process IQ/DSP backend could calculate relative channel power and SNR from
+the same samples used for audio, but should label RSSI as uncalibrated unless the
+specific receiver has been calibrated against a known source.
 
-## v0.1.9
+## Audio and mode notes
 
-- Replaced Textual Select/dropdown widgets with simple PocketTerm-native choice fields.
-- Mode, Gain and Volume now show one plain value rather than a dropdown/slider control.
-- Up/Down moves between fields.
-- Left/Right cycles the focused Mode, Gain or Volume value immediately.
-- Frequency remains a normal editable text field.
+The pipeline is:
 
-## v0.2.0
+```text
+rtl_fm → in-process signed-16-bit volume scaler → aplay
+```
 
-Live controls:
-- While listening, changes to Mode, Gain and Volume are applied immediately.
-- Frequency edits are also applied as soon as the entered value is a valid positive number.
-- The receiver process is transparently restarted with the new settings; the user no longer needs to press Start twice after changing a field.
+`rtl_fm` itself provides AM/NFM/WFM/USB/LSB demodulation. The bandwidth selection
+sets its demodulator sample rate before resampling audio to 48 kHz. Actual usable
+filter shape and SSB quality are constrained by `rtl_fm`; this app does not claim
+communications-receiver-grade DSP.
 
-## v0.2.1
+## Windows → GitHub → Raspberry Pi workflow
 
-- Fixed live Mode / Gain / Volume changes: ChoiceField now explicitly asks the app to reapply settings.
-- Frequency changes are also reapplied while listening once the typed value is valid.
-- Status line now shows active mode, gain and volume so the applied settings are visible.
+1. Unzip/download this project on Windows and create a new GitHub repository.
+2. In PowerShell, from the project directory:
 
-## v0.2.2
+   ```powershell
+   git init
+   git add .
+   git commit -m "Initial Pocket Receiver rebuild"
+   git branch -M main
+   git remote add origin https://github.com/YOUR-NAME/pocket-receiver.git
+   git push -u origin main
+   ```
 
-- Fixed live frequency retuning by debouncing frequency edits.
-- The receiver waits 450 ms after the last frequency keystroke before restarting `rtl_fm`.
-- This prevents repeated SDR restarts while a multi-digit frequency is still being typed.
-- Pending retunes are cancelled when listening stops or the app exits.
+3. On the Raspberry Pi:
+
+   ```bash
+   git clone https://github.com/YOUR-NAME/pocket-receiver.git
+   cd pocket-receiver
+   bash scripts/install.sh
+   source .venv/bin/activate
+   pocket-receiver
+   ```
+
+For later updates, commit/push on Windows, then run `git pull` on the Pi. If
+packaging files changed, rerun `bash scripts/install.sh`.
+
+## Development checks
+
+```bash
+source .venv/bin/activate
+python -m unittest discover -s tests -v
+python -m compileall -q src
+```
+
+The hardware audio path can only be fully verified on Linux with the actual
+RTL-SDR and ALSA device attached.
