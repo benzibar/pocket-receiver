@@ -11,6 +11,9 @@ The layout follows the supplied mock-up: Frequency, Mode, Bandwidth and Gain are
 on the left; antenna length, UK allocation, signal-metric availability and volume
 are on the right; the essential keys are always shown at the bottom.
 
+Version 1.0.1 improves the footer contrast and automatically opens selection
+menus upward when there is not enough screen space beneath a field.
+
 ## What it does
 
 - Displays frequency as exactly seven digits: `0,104.000 MHz`.

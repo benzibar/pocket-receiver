@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pocket-receiver"
-version = "1.0.0"
+version = "1.0.1"
 description = "Keyboard-first RTL-SDR receiver for PocketTerm and Raspberry Pi"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -21,4 +21,3 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-

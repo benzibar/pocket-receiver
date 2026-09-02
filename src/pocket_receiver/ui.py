@@ -165,10 +165,29 @@ class PocketReceiverUI:
             self._safe_add(self.screen, row + 1, info_x + 2, value, curses.A_BOLD if offset in (0, 1) else 0)
 
         if self.editing and self.focus > 0:
-            self._draw_menu(field_rows[self.focus] + 2, 17)
+            menu_height = len(self._choices()) + 2
+            menu_y = field_rows[self.focus] + 2
+            # Leave the final three rows for help/status. On shorter console
+            # configurations, open the menu above the field instead of clipping.
+            if menu_y + menu_height > height - 3:
+                menu_y = max(2, field_rows[self.focus] - menu_height)
+            self._draw_menu(menu_y, 17)
 
         help_y = height - 3
-        self._safe_add(self.screen, help_y, 2, "q Quit   Enter Edit/commit   p Play/pause   m/n Vol +/-", curses.A_DIM)
+        help_parts = (
+            ("q", curses.color_pair(4) | curses.A_BOLD),
+            (" Quit   ", 0),
+            ("Enter", curses.color_pair(4) | curses.A_BOLD),
+            (" Edit/commit   ", 0),
+            ("p", curses.color_pair(4) | curses.A_BOLD),
+            (" Play/pause   ", 0),
+            ("m/n", curses.color_pair(4) | curses.A_BOLD),
+            (" Vol +/-", 0),
+        )
+        help_x = 2
+        for text, attr in help_parts:
+            self._safe_add(self.screen, help_y, help_x, text, attr)
+            help_x += len(text)
         msg_attr = curses.color_pair(5) if any(w in self.message.lower() for w in ("error", "could not", "missing", "stopped:")) else curses.color_pair(4)
         self._safe_add(self.screen, height - 2, 2, self.message, msg_attr)
         self.screen.refresh()
