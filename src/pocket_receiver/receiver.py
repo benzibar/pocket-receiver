@@ -1,4 +1,4 @@
-"""Robust rtl_fm -> volume scaler -> ALSA process pipeline."""
+"""Robust rtl_fm -> ALSA process pipeline with system Master volume control."""
 
 from __future__ import annotations
 
@@ -103,15 +103,29 @@ class ReceiverPipeline:
         ]
 
     def check_dependencies(self) -> None:
-        missing = [name for name in ("rtl_fm", "aplay") if shutil.which(name) is None]
+        missing = [name for name in ("rtl_fm", "aplay", "amixer") if shutil.which(name) is None]
         if missing:
             raise RuntimeError("Missing command(s): " + ", ".join(missing))
+
+    def _set_system_volume(self, volume: int) -> None:
+        """Map the UI volume percentage directly to ALSA Master."""
+        result = subprocess.run(
+            ["amixer", "set", "Master", f"{volume}%"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            detail = (result.stderr or "unknown amixer error").strip()
+            raise RuntimeError(f"Unable to set ALSA Master volume: {detail}")
 
     def start(self) -> None:
         with self._lock:
             if self.playing:
                 return
             self.check_dependencies()
+            self._set_system_volume(self.settings.volume)
             if self.lease:
                 self.lease.acquire()
             self._stopping.clear()
@@ -166,10 +180,6 @@ class ReceiverPipeline:
                 self._audio_level_dbfs = (
                     measured * 0.25 + self._audio_level_dbfs * 0.75
                 )
-                scale = self.settings.volume / 100.0
-                if scale != 1.0:
-                    for index, value in enumerate(samples):
-                        samples[index] = round(value * scale)
                 if sys.byteorder != "little":
                     samples.byteswap()
                 aplay.stdin.write(samples.tobytes())
@@ -276,6 +286,8 @@ class ReceiverPipeline:
                 and settings.gain == self.settings.gain
             )
             self.settings = settings
+        if volume_only and was_playing:
+            self._set_system_volume(settings.volume)
         if was_playing and restart and not volume_only:
             self.stop()
             self.start()

@@ -11,7 +11,7 @@ The layout follows the supplied mock-up: Frequency, Mode, Bandwidth and Gain are
 on the left; antenna length, UK allocation, signal-metric availability and volume
 are on the right; the essential keys are always shown at the bottom.
 
-Version 1.1.0 improves footer contrast, automatically opens selection menus upward
+Version 1.1.1 maps the receiver volume directly to the ALSA Master output. Version 1.1.0 improved footer contrast and automatically opened selection menus upward
 when necessary, and replaces unavailable RF metrics with live audio level and SDR
 state indicators.
 
@@ -25,7 +25,7 @@ state indicators.
   Enter.
 - Provides mode-aware menus for AM, NFM, WFM, USB and LSB bandwidths.
 - Supports tuner gain Auto/20/40/60/80 dB.
-- Changes PCM volume from 0–100% without retuning.
+- Changes ALSA Master output volume directly from 0–100% without retuning.
 - Cooperatively stops `readsb` on first play and restores it at final exit, but
   only when Pocket Receiver was the process that stopped it.
 - Captures useful RTL-SDR/ALSA errors and monitors and reaps both child processes.
@@ -133,7 +133,7 @@ Enter commits it, and Esc cancels it. `p`, `m` and `n` remain global controls.
 ## Signal information
 
 The information panel shows a live RMS audio level in dBFS. It is measured from
-the demodulated signed-16-bit PCM before the user's volume adjustment, so changing
+the demodulated signed-16-bit PCM before ALSA output volume, so changing
 volume does not falsify the meter. This is an audio activity indication, not RF
 signal strength.
 
@@ -150,7 +150,7 @@ receiver has been calibrated against a known RF source.
 The pipeline is:
 
 ```text
-rtl_fm → in-process signed-16-bit volume scaler → aplay
+rtl_fm → aplay → ALSA Master output volume
 ```
 
 `rtl_fm` itself provides AM/NFM/WFM/USB/LSB demodulation. The bandwidth selection

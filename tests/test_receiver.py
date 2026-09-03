@@ -1,5 +1,6 @@
 import array
 import unittest
+from unittest.mock import patch
 
 from pocket_receiver.model import ReceiverSettings
 from pocket_receiver.receiver import ReceiverPipeline, pcm_level_dbfs
@@ -31,6 +32,17 @@ class ReceiverCommandTests(unittest.TestCase):
         self.assertIn("200000", command)
         self.assertIn("40", command)
         self.assertIn("deemp", command)
+
+
+    @patch("pocket_receiver.receiver.subprocess.run")
+    def test_system_volume_maps_directly_to_alsa_master(self, run):
+        run.return_value.returncode = 0
+        run.return_value.stderr = ""
+        pipeline = ReceiverPipeline(ReceiverSettings(volume=100))
+        pipeline._set_system_volume(100)
+        args, kwargs = run.call_args
+        self.assertEqual(args[0], ["amixer", "set", "Master", "100%"] )
+        self.assertFalse(kwargs["check"])
 
     def test_auto_gain_omits_gain_flag(self):
         command = ReceiverPipeline(ReceiverSettings())._rtl_command()
